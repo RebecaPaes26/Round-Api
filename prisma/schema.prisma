@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PatientStatus {
+  Ativo
+  Arquivado
+}
+
+enum RoundStatus {
+  EmAndamento
+  Finalizado
+}
+
+model Patient {
+  idPaciente              String        @id
+  prontuario              String?
+  nomePaciente            String
+  dataNascimento          DateTime?
+  idade                   Int?
+  leito                   String
+  unidade                 String        @default("UTI Adulto")
+  motivoInternacao        String?
+  diagnosticoAtual        String?
+  dataAdmissaoHospitalar  DateTime?
+  dataAdmissaoUnidade     DateTime?
+  diasInternacao          Int?
+  SAPS                    Int?
+  dataInicioVM            DateTime?
+  dataFimVM               DateTime?
+  tempoVMDias             Int?
+  previsaoAlta            DateTime?
+  statusPaciente          PatientStatus @default(Ativo)
+  desfecho                String?
+  dataDesfecho            DateTime?
+  dataAtualizacao         DateTime      @default(now())
+  rounds                  Round[]
+  goals                   Goal[]
+  alerts                  Alert[]
+  devices                 Device[]
+}
+
+model Round {
+  idRound                 String      @id
+  idPaciente              String
+  dataRound               String
+  equipesPresentes        String?
+  horarioInicioRound      DateTime?
+  horarioTerminoRound     DateTime?
+  tempoRoundMinutos       Int?
+  statusRound             RoundStatus @default(EmAndamento)
+  problemaAtivoPrincipal  String?
+  barreirasAlta           String?
+  condutaDefinida         String?
+  evolucaoPaciente        String?
+  pendencias              String?
+  dataRegistro            DateTime    @default(now())
+  patient                 Patient     @relation(fields: [idPaciente], references: [idPaciente])
+  goals                   Goal[]
+  bundle                  Bundle[]
+  infection               Infection[]
+  assistance              Assistance[]
+  risks                   Risk[]
+  devices                 Device[]
+  alerts                  Alert[]
+}
+
+model Goal {
+  idMeta        String   @id
+  idPaciente    String
+  idRound       String
+  dataRegistro  DateTime @default(now())
+  meta          String
+  prazo         String?
+  responsavel   String?
+  status        String   @default("Pendente")
+  conduta       String?
+  patient       Patient  @relation(fields: [idPaciente], references: [idPaciente])
+  round         Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+}
+
+model Bundle {
+  idBundle                         String   @id
+  idPaciente                       String
+  idRound                          String
+  dataRegistro                     DateTime @default(now())
+  analgesiaAdequada                String?
+  podeReduzirSedacao               String?
+  despertarDiario                  String?
+  alvoRASS                         String?
+  justificativaNaoReducaoSedacao   String?
+  outroJustificativaSedacao        String?
+  pacienteDelirium                 String?
+  podeIniciarDesmame               String?
+  indicacaoTRE                     String?
+  realizarExtubacao                String?
+  podeMobilizarHoje                String?
+  nivelMobilidade                  String?
+  progredirMobilidade              String?
+  justificativaNaoMobilizar        String?
+  familiaInformadaPlano            String?
+  presencaLesao                    String?
+  localLesao                       String?
+  grauLesao                        String?
+  barreiraPsicossocial             String?
+  round                            Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+}
+
+model Infection {
+  idInfeccao                    String   @id
+  idPaciente                    String
+  idRound                       String
+  dataRegistro                  DateTime @default(now())
+  suspeitaInfeccaoAtiva         String?
+  provavelFoco                  String?
+  nomeAntibiotico               String?
+  dataInicioAntibiotico         DateTime?
+  tempoTratamentoPrevistoDias   Int?
+  dataProvavelTerminoAntibiotico DateTime?
+  tempoAntibioticoDias          Int?
+  melhoraParametrosInfeccao     String?
+  condutaSemMelhora             String?
+  round                         Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+}
+
+model Assistance {
+  idAssistencia                  String   @id
+  idPaciente                     String
+  idRound                        String
+  dataRegistro                   DateTime @default(now())
+  viasAlimentacao                String?
+  tneDataInicio                  DateTime?
+  tneVetPleno                    String?
+  tneAdequacaoPercentual         Int?
+  tnpDataInicio                  DateTime?
+  tnpVetPleno                    String?
+  tnpAdequacaoPercentual         Int?
+  npoDataInicio                  DateTime?
+  npoDias                        Int?
+  instabilidadeHemodinamica      String?
+  instabilidadeUltimasHoras      String?
+  usoDrogaVasoativa              String?
+  aumentoDoseDrogaVasoativa      String?
+  lactatoAlterado                String?
+  suporteRespiratorio            String?
+  modoVentilatorioAtual          String?
+  dataInicioModoVentilatorio     DateTime?
+  diasModoVentilatorio           Int?
+  viaAerea                       String?
+  statusSuporteVentilatorio      String?
+  aumentoSuporteVentilatorio     String?
+  pacienteEmHD                   String?
+  tipoHD                         String?
+  antibioticoEmUso               String?
+  ajusteAntibioticoDialise       String?
+  pausaDialitica                 String?
+  dataInicioPausaDialitica       DateTime?
+  tempoPausaDialiticaDias        Int?
+  dataProvavelTerminoPausaDialitica DateTime?
+  round                          Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+}
+
+model Risk {
+  idRisco               String   @id
+  idPaciente            String
+  idRound               String
+  dataRegistro          DateTime @default(now())
+  riscoTEV              String?
+  riscoInfeccao         String?
+  riscoSangramento      String?
+  riscoLPP              String?
+  riscoNutricional      String?
+  riscoDelirium         String?
+  riscoBroncoaspiracao  String?
+  riscoQueda            String?
+  profilaxiaTEV         String?
+  profilaxiaLAMG        String?
+  outrosRiscos          String?
+  round                 Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+}
+
+model Device {
+  idDispositivo          String   @id
+  idPaciente             String
+  idRound                String
+  dataRegistro           DateTime @default(now())
+  tipoDispositivo        String
+  sitio                  String?
+  dataInsercao           DateTime?
+  podeRetirarHoje        String?
+  dataRetirada           DateTime?
+  tempoDispositivoDias   Int?
+  justificativaPermanencia String?
+  statusDispositivo      String   @default("Ativo")
+  patient                Patient  @relation(fields: [idPaciente], references: [idPaciente])
+  round                  Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+}
+
+model Alert {
+  idAlerta       String   @id
+  idPaciente     String
+  idRound        String
+  dataAlerta     DateTime @default(now())
+  tipoAlerta     String
+  mensagem       String
+  gravidade      String
+  status         String   @default("Ativo")
+  origem         String?
+  dataResolucao  DateTime?
+  patient        Patient  @relation(fields: [idPaciente], references: [idPaciente])
+  round          Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+}
+
+model AuditLog {
+  idLog      String   @id
+  dataHora   DateTime @default(now())
+  acao       String
+  entidade   String
+  idEntidade String
+  detalhes   String?
+}
