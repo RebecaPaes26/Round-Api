@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SOCIALHOSP</title>
+    <style>
+      :root {
+        --azul-institucional: #0B4F8A;
+        --azul-escuro: #083B66;
+        --azul-sidebar: #094273;
+        --azul-claro: #DCEEFF;
+        --fundo: #F5F7FA;
+        --branco: #FFFFFF;
+        --cinza: #D9E1EA;
+        --texto: #3A4A5A;
+        --verde: #28C76F;
+        --amarelo: #FFB020;
+        --laranja: #FF8A00;
+        --vermelho: #EA5455;
+        --sombra: 0 12px 24px rgba(11, 79, 138, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background: var(--fundo); color: var(--texto); }
+      body { min-height: 100vh; }
+
+      .login-shell {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #edf5ff 0%, #f7f9fb 100%);
+      }
+
+      .login-card {
+        width: min(420px, calc(100vw - 32px));
+        background: var(--branco);
+        border-radius: 24px;
+        box-shadow: var(--sombra);
+        padding: 32px 28px;
+        border: 1px solid rgba(11, 79, 138, 0.08);
+      }
+
+      .brand {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 2.4rem);
+        letter-spacing: 0.06em;
+        color: var(--azul-institucional);
+      }
+
+      .login-form {
+        display: grid;
+        gap: 16px;
+      }
+
+      .login-form label {
+        display: grid;
+        gap: 8px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--texto);
+      }
+
+      input, select, textarea, button {
+        font: inherit;
+      }
+
+      input, select, textarea {
+        width: 100%;
+        border: 1px solid var(--cinza);
+        background: var(--branco);
+        color: var(--texto);
+        border-radius: 12px;
+        padding: 12px 14px;
+        min-height: 44px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+
+      .primary-btn {
+        background: var(--azul-institucional);
+        color: var(--branco);
+        box-shadow: 0 12px 18px rgba(11, 79, 138, 0.16);
+      }
+
+      .primary-btn:hover { filter: brightness(1.03); }
+      button:disabled { opacity: 0.7; cursor: wait; }
+
+      .app-shell {
+        display: none;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        width: 260px;
+        background: var(--azul-sidebar);
+        color: var(--branco);
+        padding: 18px 14px;
+        overflow-y: auto;
+      }
+
+      .sidebar-header {
+        padding: 8px 12px 18px;
+        border-bottom: 1px solid rgba(255,255,255,0.12);
+        margin-bottom: 14px;
+      }
+
+      .sidebar-header h2 {
+        margin: 0;
+        font-size: 1.2rem;
+        letter-spacing: 0.04em;
+      }
+
+      .nav-btn {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        background: transparent;
+        color: var(--branco);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 6px;
+        text-align: left;
+        font-weight: 700;
+      }
+
+      .nav-btn.active {
+        background: rgba(255,255,255,0.12);
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+      }
+
+      .nav-btn.hidden { display: none; }
+
+      .content {
+        margin-left: 260px;
+        min-height: 100vh;
+      }
+
+      .topbar {
+        background: rgba(255,255,255,0.82);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid rgba(11, 79, 138, 0.1);
+        padding: 18px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+      }
+
+      .topbar-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--azul-escuro);
+      }
+
+      .user-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        background: var(--azul-claro);
+        padding: 8px 12px;
+        border-radius: 999px;
+      }
+
+      .page {
+        display: none;
+        padding: 22px;
+      }
+
+      .page.active {
+        display: block;
+      }
+
+      .section-card, .panel, .card {
+        background: var(--branco);
+        border: 1px solid rgba(11, 79, 138, 0.08);
+        border-radius: 18px;
+        box-shadow: var(--sombra);
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 16px;
+      }
+
+      .stat {
+        padding: 18px;
+      }
+
+      .stat-label {
+        font-size: 0.76rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #687a8f;
+        margin-bottom: 8px;
+      }
+
+      .stat-value {
+        font-size: clamp(1.5rem, 3vw, 2rem);
+        font-weight: 800;
+        color: var(--azul-escuro);
+      }
+
+      .filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .filter-group {
+        display: grid;
+        gap: 8px;
+      }
+
+      .filter-group label {
+        font-size: 0.77rem;
+        font-weight: 700;
+        color: #576b7c;
+      }
+
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 700px;
+      }
+
+      th, td {
+        padding: 12px 10px;
+        border-bottom: 1px solid rgba(11, 79, 138, 0.08);
+        text-align: left;
+        font-size: 0.92rem;
+      }
+
+      th {
+        background: #f6f9fc;
+        font-weight: 800;
+        color: var(--azul-escuro);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .badge.critico { background: rgba(234,84,85,0.12); color: var(--vermelho); }
+      .badge.alta { background: rgba(255,138,0,0.12); color: var(--laranja); }
+      .badge.moderada { background: rgba(255,176,32,0.16); color: #9d6400; }
+      .badge.baixa { background: rgba(11,79,138,0.12); color: var(--azul-institucional); }
+      .badge.info { background: rgba(120, 143, 164, 0.12); color: #495e71; }
+
+      .empty-state {
+        padding: 28px 18px;
+        border: 1px dashed rgba(11, 79, 138, 0.2);
+        border-radius: 14px;
+        background: #f8fbff;
+        color: #60738b;
+        font-weight: 700;
+      }
+
+      .hidden { display: none !important; }
+
+      @media (max-width: 900px) {
+        .sidebar {
+          position: static;
+          width: 100%;
+        }
+        .content { margin-left: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loginView" class="login-shell">
+      <div class="login-card">
+        <div class="brand">
+          <h1>SOCIALHOSP</h1>
+        </div>
+        <form id="loginForm" class="login-form">
+          <label>
+            Usuário
+            <input id="usuario" type="text" autocomplete="username" placeholder="Digite seu usuário" />
+          </label>
+          <label>
+            Senha
+            <input id="senha" type="password" autocomplete="current-password" placeholder="Digite sua senha" />
+          </label>
+          <button id="loginBtn" class="primary-btn" type="submit">Entrar</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="appView" class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2>SOCIALHOSP</h2>
+        </div>
+        <button class="nav-btn active" data-page="mapa">Mapa</button>
+        <button class="nav-btn" data-page="dashboard">Dashboard</button>
+        <button class="nav-btn" data-page="monitoramento">Monitoramento</button>
+        <button class="nav-btn" data-page="historico">Histórico</button>
+        <button class="nav-btn" data-page="evolucao">Evolução</button>
+        <button class="nav-btn" data-page="relatorios">Relatórios Sociais</button>
+        <button class="nav-btn" data-page="epidemiologico">Perfil Epidemiológico</button>
+        <button class="nav-btn" data-page="dados">Dados</button>
+        <button class="nav-btn admin-only" data-page="produtividade">Produtividade Profissional</button>
+        <button class="nav-btn admin-only" data-page="configuracoes">Configurações</button>
+        <button class="nav-btn" id="logoutBtn" type="button">Sair</button>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <div id="topbarTitle" class="topbar-title">Mapa</div>
+          <div id="userBadge" class="user-chip">Usuário</div>
+        </header>
+
+        <section id="mapa" class="page active">
+          <div class="toolbar">
+            <h2>Mapa de atendimento</h2>
+            <button class="primary-btn" id="novoPacienteBtn" type="button">Adicionar paciente</button>
+          </div>
+          <div class="filters">
+            <div class="filter-group">
+              <label>Paciente</label>
+              <select id="mapaPaciente"></select>
+            </div>
+            <div class="filter-group">
+              <label>Unidade</label>
+              <select id="mapaUnidade">
+                <option value="">Todas</option>
+                <option>PA 10</option> <option>PA 11</option> <option>PA 12</option> <option>PA 30</option>
+                <option>PA 31</option> <option>PA 34</option> <option>PA 35</option> <option>PA 36</option>
+                <option>PA 41</option> <option>PA 42</option> <option>PA 43</option> <option>PA 44</option>
+                <option>PA 51</option> <option>PA 52</option> <option>PA 53</option> <option>PA 54</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>Status</label>
+              <select id="mapaStatus"><option value="">Todos</option><option>Ativo</option><option>Concluído</option><option>Pendente</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Complexidade</label>
+              <select id="mapaComplexidade"><option value="">Todas</option><option>Baixa</option><option>Média</option><option>Alta</option><option>Muito alta</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Profissional</label>
+              <select id="mapaProfissional"><option value="">Todos</option></select>
+            </div>
+          </div>
+          <div id="mapaTableWrap" class="table-wrap"></div>
+        </section>
+
+        <section id="dashboard" class="page">
+          <div class="toolbar">
+            <h2>Dashboard executivo</h2>
+            <button class="primary-btn" id="refreshDashboardBtn" type="button">Atualizar</button>
+          </div>
+          <div class="filters">
+            <div class="filter-group">
+              <label>Período inicial</label>
+              <input id="dashboardInicio" type="date" />
+            </div>
+            <div class="filter-group">
+              <label>Período final</label>
+              <input id="dashboardFim" type="date" />
+            </div>
+            <div class="filter-group">
+              <label>Unidade</label>
+              <select id="dashboardUnidade">
+                <option value="">Todas</option>
+                <option>PA 10</option> <option>PA 11</option> <option>PA 12</option> <option>PA 30</option>
+                <option>PA 31</option> <option>PA 34</option> <option>PA 35</option> <option>PA 36</option>
+                <option>PA 41</option> <option>PA 42</option> <option>PA 43</option> <option>PA 44</option>
+                <option>PA 51</option> <option>PA 52</option> <option>PA 53</option> <option>PA 54</option>
+              </select>
+            </div>
+          </div>
+          <div id="dashboardStats" class="stats-grid"></div>
+        </section>
+
+        <section id="monitoramento" class="page">
+          <div class="toolbar">
+            <h2>Central de alertas</h2>
+            <button class="primary-btn" id="refreshMonitoramentoBtn" type="button">Atualizar</button>
+          </div>
+          <div class="filters">
+            <div class="filter-group">
+              <label>Paciente</label>
+              <select id="monitorPaciente"><option value="">Todos</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Unidade</label>
+              <select id="monitorUnidade"><option value="">Todas</option></select>
+            </div>
+            <div class="filter-group">
+              <label>Período</label>
+              <input id="monitorPeriodo" type="date" />
+            </div>
+          </div>
+          <div id="monitoramentoGrid" class="stats-grid"></div>
+        </section>
+
+        <section id="historico" class="page">
+          <div class="toolbar">
+            <h2>Histórico de atendimentos</h2>
+          </div>
+          <div class="filters">
+            <div class="filter-group"><label>Paciente</label><select id="historicoPaciente"><option value="">Todos</option></select></div>
+            <div class="filter-group"><label>Unidade</label><select id="historicoUnidade"><option value="">Todas</option></select></div>
+            <div class="filter-group"><label>Data inicial</label><input id="historicoInicio" type="date" /></div>
+            <div class="filter-group"><label>Data final</label><input id="historicoFim" type="date" /></div>
+            <div class="filter-group"><label>Profissional</label><input id="historicoProfissional" type="text" /></div>
+          </div>
+          <div id="historicoTableWrap" class="table-wrap"></div>
+        </section>
+
+        <section id="evolucao" class="page">
+          <div class="toolbar">
+            <h2>Evolução</h2>
+          </div>
+          <div class="filters">
+            <div class="filter-group"><label>Paciente</label><select id="evolucaoPaciente"><option value="">Selecione</option></select></div>
+          </div>
+          <div class="card">
+            <button class="primary-btn" id="gerarEvolucaoBtn" type="button">Gerar Evolução</button>
+            <div id="evolucaoConteudo" style="margin-top:18px; min-height:120px; white-space: pre-wrap; line-height:1.6;">Selecione um paciente para gerar a evolução automática.</div>
+          </div>
+        </section>
+
+        <section id="relatorios" class="page">
+          <div class="toolbar">
+            <h2>Relatórios sociais</h2>
+            <button class="primary-btn" id="gerarRelatorioBtn" type="button">Gerar relatório</button>
+          </div>
+          <div class="card" id="relatorioConteudo">Selecione um paciente para gerar o relatório.</div>
+        </section>
+
+        <section id="epidemiologico" class="page">
+          <div class="toolbar">
+            <h2>Perfil epidemiológico</h2>
+          </div>
+          <div id="epidemiologicoConteudo" class="card">Carregando perfil epidemiológico...</div>
+        </section>
+
+        <section id="dados" class="page">
+          <div class="toolbar">
+            <h2>Dados agregados</h2>
+          </div>
+          <div id="dadosConteudo" class="card">Carregando dados...</div>
+        </section>
+
+        <section id="produtividade" class="page">
+          <div class="toolbar">
+            <h2>Produtividade profissional</h2>
+          </div>
+          <div id="produtividadeConteudo" class="card">Carregando produtividade...</div>
+        </section>
+
+        <section id="configuracoes" class="page">
+          <div class="toolbar">
+            <h2>Configurações</h2>
+          </div>
+          <div class="card">Configurações gerais do sistema e gestão de usuários.</div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      var state = {
+        currentUser: null,
+        pacientes: [],
+        historico: [],
+        monitoramento: [],
+        dashboard: {},
+        activePage: 'mapa'
+      };
+
+      function showLogin() {
+        document.getElementById('loginView').style.display = 'flex';
+        document.getElementById('appView').style.display = 'none';
+      }
+
+      function showApp(user) {
+        state.currentUser = user || { usuario: 'Usuário', perfil: 'Rotina' };
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('appView').style.display = 'block';
+        document.getElementById('userBadge').textContent = state.currentUser.nome || state.currentUser.usuario || 'Usuário';
+        renderMenuByProfile();
+        setPage('mapa');
+        loadMapa();
+      }
+
+      function renderMenuByProfile() {
+        var perfil = state.currentUser && state.currentUser.perfil ? state.currentUser.perfil : 'Rotina';
+        var adminOnly = document.querySelectorAll('.admin-only');
+        adminOnly.forEach(function(el) {
+          el.classList.toggle('hidden', perfil !== 'Administrador | Coordenador');
+        });
+      }
+
+      function setPage(page) {
+        state.activePage = page;
+        document.querySelectorAll('.nav-btn').forEach(function(btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-page') === page);
+        });
+        document.querySelectorAll('.page').forEach(function(section) {
+          section.classList.toggle('active', section.id === page);
+        });
+        document.getElementById('topbarTitle').textContent = {
+          mapa: 'Mapa',
+          dashboard: 'Dashboard',
+          monitoramento: 'Monitoramento',
+          historico: 'Histórico',
+          evolucao: 'Evolução',
+          relatorios: 'Relatórios Sociais',
+          epidemiologico: 'Perfil Epidemiológico',
+          dados: 'Dados',
+          produtividade: 'Produtividade Profissional',
+          configuracoes: 'Configurações'
+        }[page] || 'SOCIALHOSP';
+      }
+
+      function notify(message, isError) {
+        var el = document.createElement('div');
+        el.textContent = message;
+        el.style.position = 'fixed';
+        el.style.right = '20px';
+        el.style.bottom = '20px';
+        el.style.background = isError ? '#EA5455' : '#0B4F8A';
+        el.style.color = '#fff';
+        el.style.padding = '12px 16px';
+        el.style.borderRadius = '12px';
+        el.style.boxShadow = '0 12px 24px rgba(0,0,0,0.15)';
+        el.style.zIndex = '50';
+        document.body.appendChild(el);
+        setTimeout(function() { el.remove(); }, 2600);
+      }
+
+      function setButtonLoading(button, loading, label) {
+        if (!button) return;
+        button.disabled = loading;
+        if (loading) {
+          button.dataset.originalLabel = button.textContent;
+          button.textContent = label || 'Carregando...';
+        } else if (button.dataset.originalLabel) {
+          button.textContent = button.dataset.originalLabel;
+        }
+      }
+
+      function loadUserSession() {
+        google.script.run.withSuccessHandler(function(resp) {
+          if (resp && resp.usuario) showApp(resp.usuario);
+          else showLogin();
+        }).withFailureHandler(function() {
+          showLogin();
+        }).getUsuarioAtual();
+      }
+
+      document.getElementById('loginForm').addEventListener('submit', function(evt) {
+        evt.preventDefault();
+        var usuario = document.getElementById('usuario').value.trim();
+        var senha = document.getElementById('senha').value;
+        var btn = document.getElementById('loginBtn');
+        setButtonLoading(btn, true, 'Entrando...');
+        google.script.run.withSuccessHandler(function(resp) {
+          setButtonLoading(btn, false);
+          if (resp && resp.ok) {
+            showApp(resp.usuario);
+            notify('Login realizado com sucesso.');
+          } else {
+            notify(resp && resp.mensagem ? resp.mensagem : 'Não foi possível entrar.', true);
+          }
+        }).withFailureHandler(function(err) {
+          setButtonLoading(btn, false);
+          notify(err && err.message ? err.message : 'Falha ao realizar login.', true);
+        }).loginUsuario(usuario, senha);
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', function() {
+        google.script.run.withSuccessHandler(function() {
+          localStorage.clear();
+          showLogin();
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível sair.', true);
+        }).logoutUsuario();
+      });
+
+      document.querySelectorAll('.nav-btn').forEach(function(btn) {
+        if (!btn.id || btn.id !== 'logoutBtn') {
+          btn.addEventListener('click', function() {
+            var page = btn.getAttribute('data-page');
+            if (!page) return;
+            setPage(page);
+            switch (page) {
+              case 'mapa': loadMapa(); break;
+              case 'dashboard': loadDashboard(); break;
+              case 'monitoramento': loadMonitoramento(); break;
+              case 'historico': loadHistorico(); break;
+              case 'evolucao': loadEvolucao(); break;
+              case 'relatorios': loadRelatorios(); break;
+              case 'epidemiologico': loadEpidemiologico(); break;
+              case 'dados': loadDados(); break;
+              case 'produtividade': loadProdutividade(); break;
+              case 'configuracoes': break;
+            }
+          });
+        }
+      });
+
+      document.getElementById('novoPacienteBtn').addEventListener('click', function() {
+        notify('Cadastro de paciente disponível no módulo de Mapa.');
+      });
+      document.getElementById('refreshDashboardBtn').addEventListener('click', loadDashboard);
+      document.getElementById('refreshMonitoramentoBtn').addEventListener('click', loadMonitoramento);
+      document.getElementById('gerarEvolucaoBtn').addEventListener('click', loadEvolucao);
+      document.getElementById('gerarRelatorioBtn').addEventListener('click', loadRelatorios);
+
+      function loadMapa() {
+        google.script.run.withSuccessHandler(function(rows) {
+          state.pacientes = rows || [];
+          renderMapaTable(rows || []);
+          populateSelect('mapaPaciente', rows || [], 'ID_Paciente', 'Nome_Paciente');
+          populateSelect('evolucaoPaciente', rows || [], 'ID_Paciente', 'Nome_Paciente');
+          populateSelect('monitorPaciente', rows || [], 'ID_Paciente', 'Nome_Paciente');
+          populateSelect('historicoPaciente', rows || [], 'ID_Paciente', 'Nome_Paciente');
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível carregar o mapa.', true);
+        }).getDadosMapa({});
+      }
+
+      function renderMapaTable(rows) {
+        if (!rows.length) {
+          document.getElementById('mapaTableWrap').innerHTML = '<div class="empty-state">Nenhum paciente encontrado para os filtros selecionados.</div>';
+          return;
+        }
+        var html = '<table><thead><tr><th>Paciente</th><th>Unidade</th><th>Leito</th><th>Status</th><th>Complexidade</th><th>Último atendimento</th><th>Ações</th></tr></thead><tbody>' + rows.map(function(row) {
+          return '<tr>' +
+            '<td>' + (row.Nome_Paciente || row.nomePaciente || '-') + '</td>' +
+            '<td>' + (row.Unidade || '-') + '</td>' +
+            '<td>' + (row.Leito || '-') + '</td>' +
+            '<td><span class="badge baixa">' + (row.Status || 'Ativo') + '</span></td>' +
+            '<td>' + (row.Complexidade || 'Média') + '</td>' +
+            '<td>' + (row.Data_Atendimento || row.dataAtendimento || '-') + '</td>' +
+            '<td><button type="button">Histórico</button></td>' +
+            '</tr>';
+        }).join('') + '</tbody></table>';
+        document.getElementById('mapaTableWrap').innerHTML = html;
+      }
+
+      function loadDashboard() {
+        var payload = {
+          inicio: document.getElementById('dashboardInicio').value,
+          fim: document.getElementById('dashboardFim').value,
+          unidade: document.getElementById('dashboardUnidade').value
+        };
+        google.script.run.withSuccessHandler(function(resp) {
+          state.dashboard = resp || {};
+          renderDashboard(resp || {});
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível carregar os indicadores.', true);
+        }).getDashboardData(payload);
+      }
+
+      function renderDashboard(resp) {
+        var stats = resp.indicadores || {};
+        var cards = [
+          { label: 'Pacientes acompanhados', value: stats.pacientesAcompanhados || 0 },
+          { label: 'Total de atendimentos', value: stats.totalAtendimentos || 0 },
+          { label: 'Pacientes novos', value: stats.pacientesNovos || 0 },
+          { label: 'Casos complexos', value: stats.casosComplexos || 0 },
+          { label: 'Barreiras para alta', value: stats.barreirasParaAlta || 0 }
+        ];
+        document.getElementById('dashboardStats').innerHTML = cards.map(function(card) {
+          return '<div class="card stat"><div class="stat-label">' + card.label + '</div><div class="stat-value">' + card.value + '</div></div>';
+        }).join('');
+      }
+
+      function loadMonitoramento() {
+        var payload = {
+          paciente: document.getElementById('monitorPaciente').value,
+          unidade: document.getElementById('monitorUnidade').value,
+          periodo: document.getElementById('monitorPeriodo').value
+        };
+        google.script.run.withSuccessHandler(function(rows) {
+          state.monitoramento = rows || [];
+          renderMonitoramento(rows || []);
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível carregar o monitoramento.', true);
+        }).getMonitoramentoData(payload);
+      }
+
+      function renderMonitoramento(rows) {
+        if (!rows.length) {
+          document.getElementById('monitoramentoGrid').innerHTML = '<div class="empty-state">Nenhum alerta ativo neste período.</div>';
+          return;
+        }
+        document.getElementById('monitoramentoGrid').innerHTML = rows.map(function(row) {
+          var prioridade = row.Prioridade || 'Baixa';
+          var badge = prioridade.toLowerCase().indexOf('crítico') >= 0 ? 'critico' : prioridade.toLowerCase().indexOf('alta') >= 0 ? 'alta' : prioridade.toLowerCase().indexOf('média') >= 0 ? 'moderada' : 'baixa';
+          return '<div class="card stat"><div class="stat-label">' + (row.Paciente || row.Paciente || 'Paciente') + '</div><span class="badge ' + badge + '">' + prioridade + '</span><div class="stat-value">' + (row.Tipo_Alerta || row.TipoAlerta || 'Alerta') + '</div><div style="margin-top:10px; color:#60738b;">' + (row.Problema || row.Problema || '-') + '</div></div>';
+        }).join('');
+      }
+
+      function loadHistorico() {
+        var payload = {
+          idPaciente: document.getElementById('historicoPaciente').value,
+          unidade: document.getElementById('historicoUnidade').value,
+          inicio: document.getElementById('historicoInicio').value,
+          fim: document.getElementById('historicoFim').value,
+          profissional: document.getElementById('historicoProfissional').value
+        };
+        google.script.run.withSuccessHandler(function(rows) {
+          state.historico = rows || [];
+          renderHistorico(rows || []);
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível consultar o histórico.', true);
+        }).getHistoricoPaciente ? google.script.run.getHistoricoPaciente(payload.idPaciente, payload) : google.script.run.getHistoricoPaciente(payload);
+      }
+
+      function renderHistorico(rows) {
+        if (!rows.length) {
+          document.getElementById('historicoTableWrap').innerHTML = '<div class="empty-state">Nenhum atendimento registrado para este paciente.</div>';
+          return;
+        }
+        document.getElementById('historicoTableWrap').innerHTML = '<table><thead><tr><th>Data</th><th>Paciente</th><th>Unidade</th><th>Tipo</th><th>Complexidade</th><th>Profissional</th><th>Resultado</th></tr></thead><tbody>' + rows.map(function(row) {
+          var item = row.evento || row;
+          return '<tr><td>' + (item.Data_Atendimento || item.dataAtendimento || '-') + '</td><td>' + (item.Nome_Paciente || item.nomePaciente || '-') + '</td><td>' + (item.Unidade || '-') + '</td><td>' + (item.Tipo_Atendimento || item.tipoAtendimento || '-') + '</td><td>' + (item.Complexidade || '-') + '</td><td>' + (item.Profissional || '-') + '</td><td>' + (item.Resultado_Intervencao || item.resultado || '-') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      }
+
+      function loadEvolucao() {
+        var pacienteId = document.getElementById('evolucaoPaciente').value;
+        if (!pacienteId) {
+          document.getElementById('evolucaoConteudo').textContent = 'Selecione um paciente para gerar a evolução automática.';
+          return;
+        }
+        google.script.run.withSuccessHandler(function(resp) {
+          document.getElementById('evolucaoConteudo').textContent = resp && resp.texto ? resp.texto : 'Nenhuma evolução foi gerada para este paciente.';
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível gerar a evolução.', true);
+        }).gerarEvolucaoAutomatica(pacienteId);
+      }
+
+      function loadRelatorios() {
+        var pacienteId = state.pacientes[0] && state.pacientes[0].ID_Paciente ? state.pacientes[0].ID_Paciente : '';
+        google.script.run.withSuccessHandler(function(resp) {
+          document.getElementById('relatorioConteudo').innerHTML = '<pre style="white-space: pre-wrap; margin:0; line-height:1.6;">' + (resp && resp.texto ? resp.texto : 'Nenhum relatório gerado.') + '</pre>';
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível gerar relatório.', true);
+        }).gerarRelatorioSocial ? google.script.run.gerarRelatorioSocial(pacienteId) : null;
+      }
+
+      function loadEpidemiologico() {
+        google.script.run.withSuccessHandler(function(resp) {
+          document.getElementById('epidemiologicoConteudo').innerHTML = '<pre style="white-space: pre-wrap; margin:0; line-height:1.6;">' + JSON.stringify(resp || { mensagem: 'Sem dados' }, null, 2) + '</pre>';
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível carregar o perfil epidemiológico.', true);
+        }).getPerfilEpidemiologico({});
+      }
+
+      function loadDados() {
+        google.script.run.withSuccessHandler(function(resp) {
+          document.getElementById('dadosConteudo').innerHTML = '<pre style="white-space: pre-wrap; margin:0; line-height:1.6;">' + JSON.stringify(resp || { mensagem: 'Sem dados agregados' }, null, 2) + '</pre>';
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível carregar dados agregados.', true);
+        }).getDashboardData({});
+      }
+
+      function loadProdutividade() {
+        if (state.currentUser && state.currentUser.perfil !== 'Administrador | Coordenador') {
+          document.getElementById('produtividadeConteudo').innerHTML = '<div class="empty-state">Você não possui permissão para visualizar produtividade profissional.</div>';
+          return;
+        }
+        google.script.run.withSuccessHandler(function(resp) {
+          document.getElementById('produtividadeConteudo').innerHTML = '<pre style="white-space: pre-wrap; margin:0; line-height:1.6;">' + JSON.stringify(resp || { mensagem: 'Sem dados' }, null, 2) + '</pre>';
+        }).withFailureHandler(function(err) {
+          notify(err && err.message ? err.message : 'Não foi possível carregar produtividade.', true);
+        }).getProdutividadeData({});
+      }
+
+      function populateSelect(id, rows, valueKey, labelKey) {
+        var select = document.getElementById(id);
+        if (!select) return;
+        var options = '<option value="">Todos</option>';
+        rows.forEach(function(row) {
+          var value = row[valueKey] || row[valueKey.toLowerCase()] || '';
+          var label = row[labelKey] || row[labelKey.toLowerCase()] || value;
+          options += '<option value="' + value + '">' + label + '</option>';
+        });
+        select.innerHTML = options;
+      }
+
+      function initSelects() {
+        var unidades = ['PA 10', 'PA 11', 'PA 12', 'PA 30', 'PA 31', 'PA 34', 'PA 35', 'PA 36', 'PA 41', 'PA 42', 'PA 43', 'PA 44', 'PA 51', 'PA 52', 'PA 53', 'PA 54'];
+        var sets = ['monitorUnidade', 'historicoUnidade'];
+        sets.forEach(function(id) {
+          var select = document.getElementById(id);
+          if (!select) return;
+          select.innerHTML = '<option value="">Todas</option>' + unidades.map(function(u) { return '<option>' + u + '</option>'; }).join('');
+        });
+        document.getElementById('dashboardInicio').value = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+        document.getElementById('dashboardFim').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('monitorPeriodo').value = new Date().toISOString().slice(0, 10);
+      }
+
+      initSelects();
+      loadUserSession();
+    </script>
+  </body>
+</html>

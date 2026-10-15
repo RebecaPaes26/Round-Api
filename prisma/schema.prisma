@@ -43,6 +43,7 @@ model Patient {
   goals                   Goal[]
   alerts                  Alert[]
   devices                 Device[]
+  lesions                 Lesion[]
 }
 
 model Round {
@@ -67,6 +68,7 @@ model Round {
   assistance              Assistance[]
   risks                   Risk[]
   devices                 Device[]
+  lesions                 Lesion[]
   alerts                  Alert[]
 }
 
@@ -185,20 +187,45 @@ model Risk {
 }
 
 model Device {
-  idDispositivo          String   @id
-  idPaciente             String
-  idRound                String
-  dataRegistro           DateTime @default(now())
-  tipoDispositivo        String
-  sitio                  String?
-  dataInsercao           DateTime?
-  podeRetirarHoje        String?
-  dataRetirada           DateTime?
-  tempoDispositivoDias   Int?
+  idDispositivo            String   @id
+  idPaciente               String
+  idRound                  String
+  dataRegistro             DateTime @default(now())
+  tipoDispositivo          String
+  presente                 String?
+  sitio                    String?
+  dataInsercao             DateTime?
+  horaInsercao             String?
+  dataRetirada             DateTime?
+  horaRetirada             String?
+  tempoDispositivoDias     Int?
+  indicacaoInicial         String?
   justificativaPermanencia String?
-  statusDispositivo      String   @default("Ativo")
-  patient                Patient  @relation(fields: [idPaciente], references: [idPaciente])
-  round                  Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+  dispositivoAindaNecessario String?
+  podeRetirarHoje          String?
+  motivoNaoRetirada        String?
+  conduta                  String?
+  responsavelReavaliacao   String?
+  dataProximaReavaliacao   DateTime?
+  statusDispositivo        String   @default("Ativo")
+  dataUltimaReavaliacao    DateTime?
+  usuarioUltimaReavaliacao String?
+  patient                  Patient  @relation(fields: [idPaciente], references: [idPaciente])
+  round                    Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+}
+
+model Lesion {
+  idLesao        String   @id
+  idPaciente     String
+  idRound        String
+  dataRegistro   DateTime @default(now())
+  localLesao     String?
+  estadiamento   String?
+  acompanhamento String?
+  statusLesao    String   @default("Ativa")
+  dataExclusao   DateTime?
+  patient        Patient  @relation(fields: [idPaciente], references: [idPaciente])
+  round          Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
 }
 
 model Alert {
@@ -206,14 +233,27 @@ model Alert {
   idPaciente     String
   idRound        String
   dataAlerta     DateTime @default(now())
+  codigo         String?
+  periodo        String?
   tipoAlerta     String
+  problema       String?
   mensagem       String
+  motivo         String?
+  condicao       String?
   gravidade      String
+  acaoEsperada   String?
+  responsavel    String?
+  prazo          DateTime?
   status         String   @default("Ativo")
   origem         String?
+  dataAtualizacao DateTime?
   dataResolucao  DateTime?
+  resolucaoAutomatica String?
+  historico      String?
   patient        Patient  @relation(fields: [idPaciente], references: [idPaciente])
   round          Round    @relation(fields: [idRound], references: [idRound], onDelete: Cascade)
+
+  @@index([idPaciente, codigo, periodo, status])
 }
 
 model AuditLog {

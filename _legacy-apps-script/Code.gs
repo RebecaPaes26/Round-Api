@@ -1,5 +1,14 @@
 var APP_READY = false;
 
+var SOCIALHOSP_SHEETS = {
+  Usuarios: ['ID_Usuario', 'Usuario', 'Senha', 'Nome', 'Perfil', 'Ativo', 'Criado_Em', 'Atualizado_Em'],
+  Pacientes: ['ID_Paciente', 'Nome_Paciente', 'Data_Nascimento', 'Idade', 'Sexo', 'Filiação', 'Municipio_Residencia', 'Unidade', 'Leito', 'Data_Admissao', 'Diagnostico_Clinico', 'Referencia_Familiar', 'Descricao_Genograma', 'Nome_Referencia', 'Grau_Parentesco', 'Telefone', 'Rede_Comunitaria', 'Situacao_Moradia', 'Situacao_Previdenciaria', 'Beneficios_Sociais', 'Descricao_Beneficios', 'Vulnerabilidades', 'Descricao_Vulnerabilidades', 'Grau_Dependencia', 'Data_Inclusao_Social', 'Data_Previsao_Alta', 'Arquivado', 'Data_Arquivamento', 'Data_Desfecho', 'Desfecho', 'Atualizado_Em'],
+  Historico_Atendimentos: ['ID_Evento', 'ID_Paciente', 'Nome_Paciente', 'Unidade', 'Leito', 'Data_Atendimento', 'Profissional', 'Tipo_Atendimento', 'Descricao_Tipo_Atendimento', 'Tipo_Caso', 'Descricao_Tipo_Caso', 'Complexidade', 'Metas', 'Prazos', 'Status', 'Condutas', 'Pendencias', 'Observacoes', 'Impressao_Caso', 'Barreira_Alta', 'Descricao_Barreira', 'Data_Identificacao_Barreira', 'Data_Resolucao_Barreira', 'Resultado_Barreira', 'Encaminhamentos', 'Documentacao_Encaminhamento', 'Notificacao_Compulsoria', 'Tipo_Notificacao', 'Articulacao_Familiar', 'Articulacao_Comunitaria', 'Articulacao_Equipamento', 'Equipamento_Envolvido', 'Resultado_Intervencao', 'Desfecho', 'Alertas_Identificados', 'Criado_Em'],
+  Monitoramento: ['ID_Alerta', 'ID_Paciente', 'Paciente', 'Unidade', 'Leito', 'Tipo_Alerta', 'Problema', 'Prioridade', 'Criterio', 'Data_Alerta', 'Responsavel', 'Status', 'Criado_Em'],
+  Relatorios_Sociais: ['ID_Relatorio', 'Data_Emissao', 'Tipo_Relatorio', 'ID_Paciente', 'Nome_Paciente', 'Profissional_Responsavel', 'Unidade', 'Leito', 'Periodo_Inicial', 'Periodo_Final', 'Texto_Relatorio', 'Status_Relatorio', 'Link_PDF', 'Observacoes', 'Criado_Em', 'Atualizado_Em'],
+  Log_Auditoria: ['ID_Log', 'Data_Hora', 'Usuario', 'Perfil', 'Acao', 'Modulo', 'Paciente', 'Registro', 'Valor_Anterior', 'Valor_Novo']
+};
+
 var SCHEMAS = {
   Pacientes: ['idPaciente', 'prontuario', 'nomePaciente', 'dataNascimento', 'idade', 'leito', 'unidade', 'motivoInternacao', 'diagnosticoAtual', 'dataAdmissaoHospitalar', 'dataAdmissaoUnidade', 'diasInternacao', 'SAPS', 'dataInicioVM', 'dataFimVM', 'tempoVMDias', 'previsaoAlta', 'statusPaciente', 'desfecho', 'dataDesfecho', 'dataAtualizacao'],
   Rounds: ['idRound', 'idPaciente', 'dataRound', 'equipesPresentes', 'horarioInicioRound', 'horarioTerminoRound', 'tempoRoundMinutos', 'statusRound', 'problemaAtivoPrincipal', 'barreirasAlta', 'condutaDefinida', 'evolucaoPaciente', 'pendencias', 'dataRegistro'],
@@ -14,10 +23,428 @@ var SCHEMAS = {
 };
 
 function doGet() {
-  ensureDatabase_();
-  return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('ROUND Multidisciplinar-UTI')
+  inicializarBanco();
+  return HtmlService.createHtmlOutputFromFile('socialhosp')
+    .setTitle('SOCIALHOSP | Sistema de Gestão e Assistência do Serviço Social Hospitalar')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function inicializarBanco() {
+  return criarAbasSeNaoExistirem();
+}
+
+function criarAbasSeNaoExistirem() {
+  var ss = ensureDatabase_(true);
+  var allSheets = Object.assign({}, SCHEMAS, SOCIALHOSP_SHEETS);
+  var names = Object.keys(allSheets);
+  names.forEach(function(name) {
+    var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+    var headers = allSheets[name];
+    if (sh.getLastRow() === 0) {
+      sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sh.setFrozenRows(1);
+    } else {
+      var current = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0] || [];
+      headers.forEach(function(header) {
+        if (current.indexOf(header) === -1) {
+          sh.getRange(1, sh.getLastColumn() + 1).setValue(header);
+        }
+      });
+    }
+  });
+  return { ok: true, abas: names };
+}
+
+function setupSocialHosp() {
+  return criarAbasSeNaoExistirem();
+}
+
+function seedUsuariosPadrao_() {
+  var usuarios = readTable_('Usuarios');
+  if (usuarios.length) return usuarios;
+  var admin = {
+    ID_Usuario: 'USR-ADMIN',
+    Usuario: 'admin',
+    Senha: 'admin123',
+    Nome: 'Administrador',
+    Perfil: 'Administrador | Coordenador',
+    Ativo: 'Sim',
+    Criado_Em: nowIso_(),
+    Atualizado_Em: nowIso_()
+  };
+  var rotina = {
+    ID_Usuario: 'USR-ROTINA',
+    Usuario: 'rotina',
+    Senha: 'rotina123',
+    Nome: 'Rotina',
+    Perfil: 'Rotina',
+    Ativo: 'Sim',
+    Criado_Em: nowIso_(),
+    Atualizado_Em: nowIso_()
+  };
+  var plantonista = {
+    ID_Usuario: 'USR-PLANTONISTA',
+    Usuario: 'plantonista',
+    Senha: 'plantonista123',
+    Nome: 'Plantonista',
+    Perfil: 'Plantonista',
+    Ativo: 'Sim',
+    Criado_Em: nowIso_(),
+    Atualizado_Em: nowIso_()
+  };
+  escreverLinhaEmLote_('Usuarios', [admin, rotina, plantonista]);
+  return [admin, rotina, plantonista];
+}
+
+function loginUsuario(usuario, senha) {
+  var usuarios = seedUsuariosPadrao_();
+  var user = usuarios.find(function(row) {
+    return String(row.Usuario || '').toLowerCase() === String(usuario || '').trim().toLowerCase() && String(row.Senha || '') === String(senha || '') && String(row.Ativo || '').toLowerCase() !== 'nao';
+  });
+  if (!user) {
+    return { ok: false, mensagem: 'Usuário ou senha inválidos.' };
+  }
+  var perfil = String(user.Perfil || 'Rotina');
+  var payload = { id: user.ID_Usuario, usuario: user.Usuario, nome: user.Nome, perfil: perfil };
+  PropertiesService.getUserProperties().setProperty('SOCIALHOSP_SESSION', JSON.stringify(payload));
+  return { ok: true, usuario: payload, mensagem: 'Login realizado com sucesso.' };
+}
+
+function getUsuarioAtual() {
+  var raw = PropertiesService.getUserProperties().getProperty('SOCIALHOSP_SESSION');
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch (e) { return null; }
+}
+
+function validarPermissao(perfilRequerido) {
+  var usuario = getUsuarioAtual();
+  if (!usuario) return false;
+  if (!perfilRequerido) return true;
+  var perfil = String(usuario.perfil || 'Rotina');
+  if (perfilRequerido === 'Administrador | Coordenador') {
+    return perfil === 'Administrador | Coordenador';
+  }
+  if (perfilRequerido === 'Rotina') {
+    return perfil === 'Rotina' || perfil === 'Administrador | Coordenador';
+  }
+  if (perfilRequerido === 'Plantonista') {
+    return perfil === 'Plantonista' || perfil === 'Rotina' || perfil === 'Administrador | Coordenador';
+  }
+  return perfil === perfilRequerido || perfil === 'Administrador | Coordenador';
+}
+
+function requirePermissao_(perfilRequerido, contexto) {
+  if (!validarPermissao(perfilRequerido)) {
+    throw new Error('Você não possui permissão para esta ação.');
+  }
+  return true;
+}
+
+function logoutUsuario() {
+  PropertiesService.getUserProperties().deleteProperty('SOCIALHOSP_SESSION');
+  return { ok: true };
+}
+
+function listarPacientesAtivos() {
+  var rows = readTable_('Pacientes');
+  return rows.filter(function(row) {
+    return String(row.Arquivado || '').toLowerCase() !== 'sim';
+  });
+}
+
+function getDadosMapa(filtros) {
+  filtros = filtros || {};
+  var pacientes = listarPacientesAtivos();
+  var historico = readTable_('Historico_Atendimentos');
+  var ultimoPorPaciente = {};
+  historico.forEach(function(evento) {
+    var id = String(evento.ID_Paciente || '');
+    if (!id) return;
+    var atual = ultimoPorPaciente[id] || null;
+    if (!atual || new Date(String(evento.Data_Atendimento || '1900-01-01')).getTime() >= new Date(String(atual.Data_Atendimento || '1900-01-01')).getTime()) {
+      ultimoPorPaciente[id] = evento;
+    }
+  });
+
+  return pacientes.filter(function(row) {
+    var ultimo = ultimoPorPaciente[String(row.ID_Paciente || '')] || {};
+    row.Status = row.Status || (ultimo.Status || 'Ativo');
+    row.Complexidade = row.Complexidade || (ultimo.Complexidade || 'Média');
+    row.Data_Atendimento = row.Data_Atendimento || (ultimo.Data_Atendimento || '');
+    row.Unidade = row.Unidade || (ultimo.Unidade || '');
+    row.Leito = row.Leito || (ultimo.Leito || '');
+    if (filtros.unidade && String(row.Unidade || '') !== String(filtros.unidade)) return false;
+    if (filtros.status && String(row.Status || '') !== String(filtros.status)) return false;
+    if (filtros.paciente && String(row.ID_Paciente || '') !== String(filtros.paciente)) return false;
+    return true;
+  });
+}
+
+function getHistoricoPaciente(idPaciente, filtros) {
+  filtros = filtros || {};
+  var rows = readTable_('Historico_Atendimentos');
+  return rows.filter(function(row) {
+    if (idPaciente && String(row.ID_Paciente || '') !== String(idPaciente)) return false;
+    if (filtros.idPaciente && String(row.ID_Paciente || '') !== String(filtros.idPaciente)) return false;
+    if (filtros.unidade && String(row.Unidade || '') !== String(filtros.unidade)) return false;
+    if (filtros.profissional && String(row.Profissional || '').toLowerCase().indexOf(String(filtros.profissional).toLowerCase()) === -1) return false;
+    if (filtros.inicio && String(row.Data_Atendimento || '') < String(filtros.inicio)) return false;
+    if (filtros.fim && String(row.Data_Atendimento || '') > String(filtros.fim)) return false;
+    return true;
+  }).sort(function(a, b) {
+    return new Date(String(b.Data_Atendimento || '1900-01-01')).getTime() - new Date(String(a.Data_Atendimento || '1900-01-01')).getTime();
+  });
+}
+
+function gerarEvolucaoAutomatica(idPaciente) {
+  var paciente = buscarPacientePorId(idPaciente);
+  if (!paciente) {
+    return { ok: false, texto: 'Paciente não encontrado.' };
+  }
+  var historico = getHistoricoPaciente(idPaciente);
+  var linhas = [
+    'Evolução de ' + (paciente.Nome_Paciente || 'Paciente') + ' - ' + (paciente.Unidade || 'Unidade não informada'),
+    'Diagnóstico/Contexto: ' + (paciente.Diagnostico_Clinico || 'Não informado'),
+    'Grau de dependência: ' + (paciente.Grau_Dependencia || 'Não informado'),
+    'Vulnerabilidades: ' + (paciente.Vulnerabilidades || 'Não informado'),
+    '',
+    'Resumo da trajetória:'
+  ];
+  if (!historico.length) {
+    linhas.push('Ainda não há registros de acompanhamento no histórico para este paciente.');
+  } else {
+    historico.slice(0, 5).forEach(function(evento) {
+      linhas.push('- ' + (evento.Data_Atendimento || 'sem data') + ': ' + (evento.Tipo_Atendimento || 'atendimento') + '. ' + (evento.Resultado_Intervencao || evento.Observacoes || 'Sem registro detalhado.'));
+    });
+  }
+  linhas.push('');
+  linhas.push('Conclusão: paciente permanece em acompanhamento social com foco na articulação de rede, acesso a benefícios e proteção de vulnerabilidades identificadas.');
+  return { ok: true, texto: linhas.join('\n') };
+}
+
+function gerarRelatorioSocial(idPaciente) {
+  var paciente = buscarPacientePorId(idPaciente);
+  if (!paciente) {
+    return { ok: false, texto: 'Paciente não encontrado para emissão de relatório.' };
+  }
+  var historico = getHistoricoPaciente(idPaciente);
+  var ultimoEvento = historico[0] || {};
+  var texto = [
+    'RELATÓRIO SOCIAL HOSPITALAR',
+    'Paciente: ' + (paciente.Nome_Paciente || 'Não informado'),
+    'Unidade: ' + (paciente.Unidade || 'Não informado') + ' | Leito: ' + (paciente.Leito || 'Não informado'),
+    'Diagnóstico clínico: ' + (paciente.Diagnostico_Clinico || 'Não informado'),
+    'Benefícios e vulnerabilidades: ' + (paciente.Beneficios_Sociais || 'Não informado') + ' / ' + (paciente.Vulnerabilidades || 'Não informado'),
+    'Situação de moradia: ' + (paciente.Situacao_Moradia || 'Não informado'),
+    'Previdência e rede comunitária: ' + (paciente.Situacao_Previdenciaria || 'Não informado') + ' | ' + (paciente.Rede_Comunitaria || 'Não informado'),
+    '',
+    'Último atendimento: ' + (ultimoEvento.Data_Atendimento || 'Sem registro') + ' | Profissional: ' + (ultimoEvento.Profissional || 'Não informado'),
+    'Resultado da intervenção: ' + (ultimoEvento.Resultado_Intervencao || 'Sem registro')
+  ].join('\n');
+  return { ok: true, texto: texto };
+}
+
+function buscarPacientePorId(idPaciente) {
+  var rows = readTable_('Pacientes');
+  return rows.find(function(row) { return String(row.ID_Paciente) === String(idPaciente); }) || null;
+}
+
+function salvarNovoPaciente(payload) {
+  requirePermissao_('Rotina', 'cadastro_paciente');
+  payload = payload || {};
+  if (!payload.Nome_Paciente || !payload.Unidade) {
+    throw new Error('Informe nome do paciente e unidade.');
+  }
+  var rows = readTable_('Pacientes');
+  var id = payload.ID_Paciente || makeId_('PAC');
+  var item = {
+    ID_Paciente: id,
+    Nome_Paciente: payload.Nome_Paciente,
+    Data_Nascimento: payload.Data_Nascimento || '',
+    Idade: payload.Idade || '',
+    Sexo: payload.Sexo || '',
+    Filiação: payload.Filiação || '',
+    Municipio_Residencia: payload.Municipio_Residencia || '',
+    Unidade: payload.Unidade || '',
+    Leito: payload.Leito || '',
+    Data_Admissao: payload.Data_Admissao || '',
+    Diagnostico_Clinico: payload.Diagnostico_Clinico || '',
+    Referencia_Familiar: payload.Referencia_Familiar || '',
+    Descricao_Genograma: payload.Descricao_Genograma || '',
+    Nome_Referencia: payload.Nome_Referencia || '',
+    Grau_Parentesco: payload.Grau_Parentesco || '',
+    Telefone: payload.Telefone || '',
+    Rede_Comunitaria: payload.Rede_Comunitaria || '',
+    Situacao_Moradia: payload.Situacao_Moradia || '',
+    Situacao_Previdenciaria: payload.Situacao_Previdenciaria || '',
+    Beneficios_Sociais: payload.Beneficios_Sociais || '',
+    Descricao_Beneficios: payload.Descricao_Beneficios || '',
+    Vulnerabilidades: payload.Vulnerabilidades || '',
+    Descricao_Vulnerabilidades: payload.Descricao_Vulnerabilidades || '',
+    Grau_Dependencia: payload.Grau_Dependencia || '',
+    Data_Inclusao_Social: payload.Data_Inclusao_Social || todayIso_(),
+    Data_Previsao_Alta: payload.Data_Previsao_Alta || '',
+    Arquivado: 'Não',
+    Atualizado_Em: nowIso_()
+  };
+  rows.push(item);
+  escreverLinhaEmLote_('Pacientes', rows);
+  registrarLog_('Cadastro paciente', 'Pacientes', id, JSON.stringify(item));
+  return item;
+}
+
+function atualizarCadastroPaciente(payload) {
+  requirePermissao_('Rotina', 'atualizar_cadastro');
+  var id = payload.ID_Paciente;
+  var rows = readTable_('Pacientes');
+  var index = rows.findIndex(function(row) { return String(row.ID_Paciente) === String(id); });
+  if (index === -1) throw new Error('Paciente não encontrado.');
+  Object.keys(payload).forEach(function(key) {
+    rows[index][key] = payload[key];
+  });
+  rows[index].Atualizado_Em = nowIso_();
+  escreverLinhaEmLote_('Pacientes', rows);
+  registrarLog_('Atualização cadastral', 'Pacientes', id, JSON.stringify(payload));
+  return rows[index];
+}
+
+function salvarAtualizacaoDiaria(payload) {
+  requirePermissao_('Rotina', 'atualizacao_diaria');
+  payload = payload || {};
+  if (!payload.ID_Paciente || !payload.Data_Atendimento) {
+    throw new Error('Paciente e data de atendimento são obrigatórios.');
+  }
+  var evento = {
+    ID_Evento: payload.ID_Evento || makeId_('EVT'),
+    ID_Paciente: payload.ID_Paciente,
+    Nome_Paciente: payload.Nome_Paciente || buscarPacientePorId(payload.ID_Paciente).Nome_Paciente || '',
+    Unidade: payload.Unidade || '',
+    Leito: payload.Leito || '',
+    Data_Atendimento: payload.Data_Atendimento,
+    Profissional: payload.Profissional || '',
+    Tipo_Atendimento: payload.Tipo_Atendimento || '',
+    Descricao_Tipo_Atendimento: payload.Descricao_Tipo_Atendimento || '',
+    Tipo_Caso: payload.Tipo_Caso || '',
+    Descricao_Tipo_Caso: payload.Descricao_Tipo_Caso || '',
+    Complexidade: payload.Complexidade || '',
+    Metas: payload.Metas || '',
+    Prazos: payload.Prazos || '',
+    Status: payload.Status || 'Andamento',
+    Condutas: payload.Condutas || '',
+    Pendencias: payload.Pendencias || '',
+    Observacoes: payload.Observacoes || '',
+    Impressao_Caso: payload.Impressao_Caso || '',
+    Barreira_Alta: payload.Barreira_Alta || 'Não',
+    Descricao_Barreira: payload.Descricao_Barreira || '',
+    Data_Identificacao_Barreira: payload.Data_Identificacao_Barreira || '',
+    Data_Resolucao_Barreira: payload.Data_Resolucao_Barreira || '',
+    Resultado_Barreira: payload.Resultado_Barreira || '',
+    Encaminhamentos: payload.Encaminhamentos || '',
+    Documentacao_Encaminhamento: payload.Documentacao_Encaminhamento || '',
+    Notificacao_Compulsoria: payload.Notificacao_Compulsoria || 'Não',
+    Tipo_Notificacao: payload.Tipo_Notificacao || '',
+    Articulacao_Familiar: payload.Articulacao_Familiar || 'Não',
+    Articulacao_Comunitaria: payload.Articulacao_Comunitaria || 'Não',
+    Articulacao_Equipamento: payload.Articulacao_Equipamento || 'Não',
+    Equipamento_Envolvido: payload.Equipamento_Envolvido || '',
+    Resultado_Intervencao: payload.Resultado_Intervencao || '',
+    Desfecho: payload.Desfecho || '',
+    Alertas_Identificados: payload.Alertas_Identificados || '',
+    Criado_Em: nowIso_()
+  };
+  var historico = readTable_('Historico_Atendimentos');
+  historico.push(evento);
+  escreverLinhaEmLote_('Historico_Atendimentos', historico);
+  registrarLog_('Atualização diária', 'Historico_Atendimentos', evento.ID_Evento, JSON.stringify(evento));
+  return evento;
+}
+
+function arquivarPaciente(payload) {
+  requirePermissao_('Rotina', 'arquivamento');
+  payload = payload || {};
+  if (!payload.ID_Paciente || !payload.Desfecho || !payload.Data_Desfecho) throw new Error('Informe paciente, desfecho e data do desfecho.');
+  var rows = readTable_('Pacientes');
+  var index = rows.findIndex(function(row) { return String(row.ID_Paciente) === String(payload.ID_Paciente); });
+  if (index === -1) throw new Error('Paciente não encontrado para arquivamento.');
+  rows[index].Arquivado = 'Sim';
+  rows[index].Data_Arquivamento = payload.Data_Arquivamento || todayIso_();
+  rows[index].Data_Desfecho = payload.Data_Desfecho;
+  rows[index].Desfecho = payload.Desfecho;
+  rows[index].Atualizado_Em = nowIso_();
+  escreverLinhaEmLote_('Pacientes', rows);
+  registrarLog_('Arquivamento', 'Pacientes', payload.ID_Paciente, JSON.stringify({ Desfecho: payload.Desfecho, Data_Desfecho: payload.Data_Desfecho }));
+  return { ok: true };
+}
+
+function getDashboardData(filtros) {
+  requirePermissao_('Rotina', 'dashboard');
+  return calcularIndicadores(filtros || {});
+}
+
+function getMonitoramentoData(filtros) {
+  requirePermissao_('Rotina', 'monitoramento');
+  filtros = filtros || {};
+  var monitor = readTable_('Monitoramento');
+  return monitor.filter(function(row) {
+    if (filtros.unidade && String(row.Unidade || '') !== String(filtros.unidade)) return false;
+    if (filtros.paciente && String(row.ID_Paciente || '') !== String(filtros.paciente)) return false;
+    return true;
+  });
+}
+
+function getProdutividadeData(filtros) {
+  requirePermissao_('Administrador | Coordenador', 'produtividade');
+  filtros = filtros || {};
+  var rows = readTable_('Historico_Atendimentos');
+  return rows.filter(function(row) {
+    if (filtros.unidade && String(row.Unidade || '') !== String(filtros.unidade)) return false;
+    if (filtros.profissional && String(row.Profissional || '') !== String(filtros.profissional)) return false;
+    return true;
+  });
+}
+
+function getPerfilEpidemiologico(filtros) {
+  requirePermissao_('Rotina', 'perfil_epidemiologico');
+  filtros = filtros || {};
+  var pacientes = readTable_('Pacientes');
+  return pacientes.filter(function(row) {
+    if (filtros.unidade && String(row.Unidade || '') !== String(filtros.unidade)) return false;
+    return true;
+  });
+}
+
+function registrarLog_(acao, modulo, paciente, valor) {
+  var row = {
+    ID_Log: makeId_('LOG'),
+    Data_Hora: nowIso_(),
+    Usuario: getUsuarioAtual() ? getUsuarioAtual().usuario : 'Sistema',
+    Perfil: getUsuarioAtual() ? getUsuarioAtual().perfil : 'Sistema',
+    Acao: acao || '',
+    Modulo: modulo || '',
+    Paciente: paciente || '',
+    Registro: '',
+    Valor_Anterior: '',
+    Valor_Novo: valor || ''
+  };
+  var rows = readTable_('Log_Auditoria');
+  rows.push(row);
+  escreverLinhaEmLote_('Log_Auditoria', rows);
+}
+
+function escreverLinhaEmLote_(sheetName, rows) {
+  var sh = getSpreadsheet_().getSheetByName(sheetName);
+  if (!sh) return;
+  if (sh.getLastRow() === 0) {
+    var headers = Object.keys(SOCIALHOSP_SHEETS[sheetName] || {}).length ? SOCIALHOSP_SHEETS[sheetName] : (SCHEMAS[sheetName] || []);
+    if (headers && headers.length) sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+  var cols = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  var values = rows.map(function(row) {
+    return cols.map(function(colName) { return row[colName] !== undefined ? row[colName] : ''; });
+  });
+  if (!values.length) return;
+  sh.clearContents();
+  sh.getRange(1, 1, values.length + 1, cols.length).setValues([cols].concat(values));
 }
 
 function setupRoundHosp() {

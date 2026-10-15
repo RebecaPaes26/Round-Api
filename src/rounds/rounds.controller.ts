@@ -20,6 +20,11 @@ export class RoundsController {
     return this.rounds.listPatients();
   }
 
+  @Get('patients/:id')
+  getPatient(@Param('id') id: string) {
+    return this.rounds.getPatient(id);
+  }
+
   @Post('patients')
   savePatient(@Body() body: Record<string, unknown>) {
     return this.rounds.savePatient(body);
@@ -35,9 +40,24 @@ export class RoundsController {
     return this.rounds.startRound(body);
   }
 
+  @Post('rounds/:id/save')
+  saveRound(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    return this.rounds.saveRound(id, body);
+  }
+
+  @Patch('alerts/:id')
+  updateAlert(@Param('id') id: string, @Body() body: Record<string, unknown>) {
+    return this.rounds.updateAlert(id, body);
+  }
+
   @Get('dashboard')
   dashboard(@Query() query: Record<string, string>) {
     return this.rounds.dashboard(query);
+  }
+
+  @Get('devices/control')
+  deviceControl(@Query() query: Record<string, string>) {
+    return this.rounds.deviceControl(query);
   }
 
   @Get('history')
